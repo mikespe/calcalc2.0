@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  height    Float?
+  weight    Float?
+  age       Int?
+  gender    String?
+  activityLevel String?
+  goal      String?  @default("maintain")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  calorieLogs CalorieLog[]
+  weightLogs  WeightLog[]
+  activityLogs ActivityLog[]
+
+  @@map("users")
+}
+
+model CalorieLog {
+  id        String   @id @default(cuid())
+  calories  Int
+  date      DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("calorie_logs")
+}
+
+model WeightLog {
+  id        String   @id @default(cuid())
+  weight    Float
+  date      DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("weight_logs")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  activity  String
+  date      DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("activity_logs")
+}

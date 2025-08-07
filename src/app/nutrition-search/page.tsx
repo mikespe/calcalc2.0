@@ -5,17 +5,19 @@ import { useState, useEffect } from 'react'
 interface FoodItem {
   fdcId: number
   description: string
-  brandName?: string
   brandOwner?: string
+  dataType?: string
 }
 
 interface NutritionFacts {
   fdcId: number
   description: string
-  brandName?: string
+  brandOwner?: string
+  servingSize?: string
+  servingSizeUnit?: string
   nutrients: {
     name: string
-    amount: number
+    amount: number | string
     unit: string
   }[]
 }
@@ -43,42 +45,30 @@ export default function NutritionSearch() {
     setError('')
 
     try {
-      // For demo purposes, we'll use a mock API response
-      // In a real app, you'd use the USDA API with an API key
-      const mockResults: FoodItem[] = [
-        {
-          fdcId: 1,
-          description: 'Apple, raw, with skin',
-          brandName: 'Generic'
-        },
-        {
-          fdcId: 2,
-          description: 'Chicken breast, boneless, skinless, raw',
-          brandName: 'Generic'
-        },
-        {
-          fdcId: 3,
-          description: 'Oatmeal, cooked, plain',
-          brandName: 'Generic'
-        },
-        {
-          fdcId: 4,
-          description: 'Banana, raw',
-          brandName: 'Generic'
-        },
-        {
-          fdcId: 5,
-          description: 'Salmon, Atlantic, farmed, raw',
-          brandName: 'Generic'
-        }
-      ]
+      const response = await fetch(`/api/nutrition-search?q=${encodeURIComponent(query)}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to search for food')
+      }
 
-      // Filter results based on search query
-      const filteredResults = mockResults.filter(food =>
-        food.description.toLowerCase().includes(query.toLowerCase())
-      )
+      const data = await response.json()
+      
+      if (!data.foods || data.foods.length === 0) {
+        setSearchResults([])
+        setError('No results found. Try a different search term.')
+        return
+      }
 
-      setSearchResults(filteredResults)
+      // Limit results for better performance
+      const foods = data.foods.slice(0, 15).map((food: any) => ({
+        fdcId: food.fdcId,
+        description: food.description || food.allHighlightFields || food.foodCode,
+        brandOwner: food.brandOwner,
+        dataType: food.dataType
+      }))
+
+      setSearchResults(foods)
+      setError('')
       
       // Add to recent searches
       if (!recentSearches.includes(query)) {
@@ -88,6 +78,7 @@ export default function NutritionSearch() {
       }
     } catch (err) {
       setError('Failed to search for food. Please try again.')
+      setSearchResults([])
     } finally {
       setIsLoading(false)
     }
@@ -98,30 +89,83 @@ export default function NutritionSearch() {
     setError('')
 
     try {
-      // Mock nutrition facts data
-      const mockNutritionFacts: NutritionFacts = {
-        fdcId,
-        description: searchResults.find(food => food.fdcId === fdcId)?.description || '',
-        nutrients: [
-          { name: 'Calories', amount: 95, unit: 'kcal' },
-          { name: 'Protein', amount: 0.5, unit: 'g' },
-          { name: 'Total Fat', amount: 0.3, unit: 'g' },
-          { name: 'Carbohydrates', amount: 25, unit: 'g' },
-          { name: 'Fiber', amount: 4.4, unit: 'g' },
-          { name: 'Sugar', amount: 19, unit: 'g' },
-          { name: 'Sodium', amount: 1, unit: 'mg' },
-          { name: 'Potassium', amount: 195, unit: 'mg' },
-          { name: 'Vitamin C', amount: 8.4, unit: 'mg' },
-          { name: 'Calcium', amount: 6, unit: 'mg' },
-          { name: 'Iron', amount: 0.2, unit: 'mg' }
-        ]
+      const response = await fetch(`/api/nutrition-search?fdcId=${fdcId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load nutrition facts')
       }
 
-      setSelectedFood(mockNutritionFacts)
+      const data = await response.json()
+      const nutritionFacts = extractNutrients(data)
+      setSelectedFood(nutritionFacts)
     } catch (err) {
       setError('Failed to load nutrition facts. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const extractNutrients = (data: any): NutritionFacts => {
+    const nutrients: { name: string; amount: number | string; unit: string }[] = []
+    
+    // Check if we have label nutrients (Branded Foods)
+    if (data.labelNutrients) {
+      if (data.labelNutrients.calories?.value) {
+        nutrients.push({ name: 'Calories', amount: data.labelNutrients.calories.value, unit: 'kcal' })
+      }
+      if (data.labelNutrients.protein?.value) {
+        nutrients.push({ name: 'Protein', amount: data.labelNutrients.protein.value, unit: 'g' })
+      }
+      if (data.labelNutrients.fat?.value) {
+        nutrients.push({ name: 'Total Fat', amount: data.labelNutrients.fat.value, unit: 'g' })
+      }
+      if (data.labelNutrients.carbohydrates?.value) {
+        nutrients.push({ name: 'Carbohydrates', amount: data.labelNutrients.carbohydrates.value, unit: 'g' })
+      }
+      if (data.labelNutrients.fiber?.value) {
+        nutrients.push({ name: 'Fiber', amount: data.labelNutrients.fiber.value, unit: 'g' })
+      }
+      if (data.labelNutrients.sugars?.value) {
+        nutrients.push({ name: 'Sugar', amount: data.labelNutrients.sugars.value, unit: 'g' })
+      }
+      if (data.labelNutrients.sodium?.value) {
+        nutrients.push({ name: 'Sodium', amount: data.labelNutrients.sodium.value, unit: 'mg' })
+      }
+    } 
+    // Otherwise look in foodNutrients (Survey Foods, Foundation Foods, etc)
+    else if (data.foodNutrients) {
+      // Map nutrient IDs to their values
+      const nutrientMap: { [key: number]: { name: string; unit: string } } = {
+        1008: { name: 'Calories', unit: 'kcal' },      // Energy (kcal)
+        1003: { name: 'Protein', unit: 'g' },          // Protein
+        1004: { name: 'Total Fat', unit: 'g' },        // Total lipid (fat)
+        1005: { name: 'Carbohydrates', unit: 'g' },    // Carbohydrate, by difference
+        1079: { name: 'Fiber', unit: 'g' },            // Fiber, total dietary
+        2000: { name: 'Sugar', unit: 'g' },            // Sugars, total
+        1093: { name: 'Sodium', unit: 'mg' }           // Sodium, Na
+      }
+      
+      data.foodNutrients.forEach((nutrient: any) => {
+        const nutrientId = nutrient.nutrient?.id || nutrient.nutrientId
+        const value = nutrient.amount || nutrient.value
+        
+        if (nutrientMap[nutrientId] && value !== null && value !== undefined) {
+          nutrients.push({
+            name: nutrientMap[nutrientId].name,
+            amount: value,
+            unit: nutrientMap[nutrientId].unit
+          })
+        }
+      })
+    }
+
+    return {
+      fdcId: data.fdcId,
+      description: data.description || '',
+      brandOwner: data.brandOwner,
+      servingSize: data.servingSize,
+      servingSizeUnit: data.servingSizeUnit,
+      nutrients
     }
   }
 
@@ -160,9 +204,21 @@ export default function NutritionSearch() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full sm:w-auto bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center justify-center"
                 >
-                  {isLoading ? 'Searching...' : 'Search'}
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Search
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -211,20 +267,31 @@ export default function NutritionSearch() {
                     onClick={() => getNutritionFacts(food.fdcId)}
                     className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <h3 className="font-medium text-gray-900">{food.description}</h3>
-                    {food.brandName && (
-                      <p className="text-sm text-gray-600">{food.brandName}</p>
-                    )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{food.description}</h3>
+                        {food.brandOwner && (
+                          <p className="text-sm text-gray-600">{food.brandOwner}</p>
+                        )}
+                      </div>
+                      {food.dataType && (
+                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                          {food.dataType}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
             ) : searchQuery && !isLoading ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                <p className="text-sm text-gray-400 mt-2">Try searching for: apple, chicken, oatmeal, banana, salmon</p>
               </div>
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500">Search for a food to see results</p>
+                <p className="text-sm text-gray-400 mt-2">Try: apple, chicken breast, oatmeal</p>
               </div>
             )}
           </div>
@@ -242,8 +309,13 @@ export default function NutritionSearch() {
               <div>
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">{selectedFood.description}</h3>
-                  {selectedFood.brandName && (
-                    <p className="text-sm text-gray-600">{selectedFood.brandName}</p>
+                  {selectedFood.brandOwner && (
+                    <p className="text-sm text-gray-600">{selectedFood.brandOwner}</p>
+                  )}
+                  {selectedFood.servingSize && selectedFood.servingSizeUnit && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Serving size: {selectedFood.servingSize} {selectedFood.servingSizeUnit}
+                    </p>
                   )}
                 </div>
                 
