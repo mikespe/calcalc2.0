@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --border-color: #dee2e6;
+  --border-radius: 0.25rem;
+  --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --transition: all 0.3s ease;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #f9f9f9;
+}
+
+/* Custom component styles */
+.card {
+  @apply border border-gray-200 rounded shadow-sm bg-white transition-all duration-300;
+}
+
+.card:hover {
+  @apply shadow-md;
+}
+
+.form-control {
+  @apply px-3 py-2 text-base text-gray-700 bg-white border border-gray-300 rounded transition-colors duration-200;
+}
+
+.form-control:focus {
+  @apply outline-none border-blue-500 ring-2 ring-blue-200;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center font-medium text-center cursor-pointer px-3 py-2 text-base rounded transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply text-white bg-blue-600 border border-blue-600;
+}
+
+.btn-primary:hover {
+  @apply bg-blue-700 border-blue-700;
+}
+
+.error {
+  @apply text-red-600 text-sm mt-1;
+}
+
+.results-value {
+  @apply text-3xl font-bold text-blue-600;
+}
+
+.results-label {
+  @apply text-base text-gray-600;
+}
+
+.navbar {
+  @apply px-3 py-3 bg-white shadow-sm;
+}
+
+.navbar-brand {
+  @apply font-semibold text-blue-600;
+}
+
+.nav-link {
+  @apply text-gray-600 font-medium px-4 py-2 transition-colors duration-200;
+}
+
+.nav-link:hover {
+  @apply text-blue-600;
+}
+
+/* Data visualization styles */
+.chart-container {
+  @apply mt-8 mb-12 p-4 bg-white rounded shadow-sm;
+}
+
+.entry {
+  @apply mb-2 p-3 bg-white rounded border-l-4 border-blue-500 transition-all duration-200;
+}
+
+.entry:hover {
+  @apply transform translate-x-1 shadow-sm;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .entry {
+    @apply text-sm;
+  }
+  
+  .container {
+    @apply px-2;
+  }
+}

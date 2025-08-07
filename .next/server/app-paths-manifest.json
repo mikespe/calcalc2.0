@@ -1,0 +1,8 @@
+{
+  "/page": "app/page.js",
+  "/calorie-log/page": "app/calorie-log/page.js",
+  "/calorie-calculator/page": "app/calorie-calculator/page.js",
+  "/weight-log/page": "app/weight-log/page.js",
+  "/nutrition-search/page": "app/nutrition-search/page.js",
+  "/my-account/page": "app/my-account/page.js"
+}
