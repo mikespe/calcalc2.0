@@ -56,11 +56,12 @@ export async function POST(request: NextRequest) {
       message: 'Login successful'
     })
 
-    // Set HTTP-only cookie
+    // Set HTTP-only cookie with proper path
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 days
     })
 

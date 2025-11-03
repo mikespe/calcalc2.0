@@ -7,17 +7,19 @@ interface LogEntry {
   date: string
   calories?: number
   weight?: number
+  activity?: string
 }
 
 interface CalendarProps {
-  onDateSelect: (date: Date, hasCalorieLog: boolean, hasWeightLog: boolean) => void
+  onDateSelect: (date: Date, hasCalorieLog: boolean, hasWeightLog: boolean, hasActivityLog: boolean) => void
 }
 
 export default function Calendar({ onDateSelect }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [logs, setLogs] = useState<{ calorieLogs: LogEntry[], weightLogs: LogEntry[] }>({
+  const [logs, setLogs] = useState<{ calorieLogs: LogEntry[], weightLogs: LogEntry[], activityLogs: LogEntry[] }>({
     calorieLogs: [],
-    weightLogs: []
+    weightLogs: [],
+    activityLogs: []
   })
   const [isLoading, setIsLoading] = useState(true)
 
@@ -68,13 +70,16 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
     const weightLog = logs.weightLogs?.find(log => 
       log.date.startsWith(dateStr)
     )
+    const activityLog = logs.activityLogs?.find(log => 
+      log.date.startsWith(dateStr)
+    )
     
-    return { calorieLog, weightLog }
+    return { calorieLog, weightLog, activityLog }
   }
 
   const handleDateClick = (date: Date) => {
-    const { calorieLog, weightLog } = getLogsForDate(date)
-    onDateSelect(date, !!calorieLog, !!weightLog)
+    const { calorieLog, weightLog, activityLog } = getLogsForDate(date)
+    onDateSelect(date, !!calorieLog, !!weightLog, !!activityLog)
   }
 
   const goToPreviousMonth = () => {
@@ -106,6 +111,7 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
         <button
           onClick={goToPreviousMonth}
           className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+          aria-label="Previous month"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -119,6 +125,7 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
         <button
           onClick={goToNextMonth}
           className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+          aria-label="Next month"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -140,9 +147,9 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
             return <div key={index} className="p-2" />
           }
 
-          const { calorieLog, weightLog } = getLogsForDate(day)
+          const { calorieLog, weightLog, activityLog } = getLogsForDate(day)
           const isToday = day.toDateString() === new Date().toDateString()
-          const hasLogs = calorieLog || weightLog
+          const hasLogs = calorieLog || weightLog || activityLog
 
           return (
             <button
@@ -164,6 +171,9 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
                 {weightLog && (
                   <div className="w-2 h-2 bg-green-500 rounded-full" title="Weight log"></div>
                 )}
+                {activityLog && (
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full" title="Activity log"></div>
+                )}
               </div>
             </button>
           )
@@ -171,7 +181,7 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex justify-center space-x-4 text-xs text-gray-600">
+      <div className="mt-4 flex flex-wrap justify-center gap-3 sm:gap-4 text-xs text-gray-600">
         <div className="flex items-center">
           <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
           <span>Calorie Log</span>
@@ -179,6 +189,10 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
         <div className="flex items-center">
           <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
           <span>Weight Log</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
+          <span>Activity Log</span>
         </div>
       </div>
     </div>

@@ -24,18 +24,50 @@ export default function CalendarPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleDateSelect = (
+  const [existingLogs, setExistingLogs] = useState<{
+    calories?: { id: string; calories: number }[];
+    weight?: { id: string; weight: number };
+    activities?: { id: string; activity: string }[];
+  }>({});
+  
+  const [editingCalorieId, setEditingCalorieId] = useState<string | null>(null);
+  const [editingCalorieValue, setEditingCalorieValue] = useState<string>("");
+
+  const handleDateSelect = async (
     date: Date,
     hasCalorie: boolean,
-    hasWeight: boolean
+    hasWeight: boolean,
+    hasActivity: boolean
   ) => {
     setSelectedDate(date);
     setHasCalorieLog(hasCalorie);
     setHasWeightLog(hasWeight);
+    setHasActivityLog(hasActivity);
     setShowDayView(true);
     setLogType(null);
     setLogValue("");
     setError("");
+    
+    // Fetch existing logs for this date
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      const response = await fetch(`/api/logs`);
+      const data = await response.json();
+      
+      const dateLogs = {
+        calories: data.calorieLogs?.filter((log: any) => log.date.startsWith(dateStr))
+          .map((log: any) => ({ id: log.id, calories: log.calories })) || [],
+        weight: data.weightLogs?.find((log: any) => log.date.startsWith(dateStr)) ? {
+          id: data.weightLogs.find((log: any) => log.date.startsWith(dateStr)).id,
+          weight: data.weightLogs.find((log: any) => log.date.startsWith(dateStr)).weight
+        } : undefined,
+        activities: data.activityLogs?.filter((log: any) => log.date.startsWith(dateStr)) || []
+      };
+      
+      setExistingLogs(dateLogs);
+    } catch (error) {
+      console.error('Error fetching existing logs:', error);
+    }
   };
 
   const handleLogSubmit = async (e: React.FormEvent) => {
@@ -64,8 +96,25 @@ export default function CalendarPage() {
       if (response.ok) {
         setLogValue("");
         setLogType(null);
-        // Optionally, refresh logs for the day
-        window.location.reload();
+        
+        // Refresh existing logs for this date
+        if (selectedDate) {
+          const dateStr = selectedDate.toISOString().split('T')[0];
+          const logsResponse = await fetch(`/api/logs`);
+          const logsData = await logsResponse.json();
+          
+          const dateLogs = {
+            calories: logsData.calorieLogs?.filter((log: any) => log.date.startsWith(dateStr))
+              .map((log: any) => ({ id: log.id, calories: log.calories })) || [],
+            weight: logsData.weightLogs?.find((log: any) => log.date.startsWith(dateStr)) ? {
+              id: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).id,
+              weight: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).weight
+            } : undefined,
+            activities: logsData.activityLogs?.filter((log: any) => log.date.startsWith(dateStr)) || []
+          };
+          
+          setExistingLogs(dateLogs);
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.error || "Failed to log entry");
@@ -74,6 +123,75 @@ export default function CalendarPage() {
       setError("Error logging entry");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCalorie = async (calorieId: string) => {
+    try {
+      const response = await fetch(`/api/calorie-log/${calorieId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok && selectedDate) {
+        // Refresh existing logs
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const logsResponse = await fetch(`/api/logs`);
+        const logsData = await logsResponse.json();
+        
+        const dateLogs = {
+          calories: logsData.calorieLogs?.filter((log: any) => log.date.startsWith(dateStr))
+            .map((log: any) => ({ id: log.id, calories: log.calories })) || [],
+          weight: logsData.weightLogs?.find((log: any) => log.date.startsWith(dateStr)) ? {
+            id: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).id,
+            weight: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).weight
+          } : undefined,
+          activities: logsData.activityLogs?.filter((log: any) => log.date.startsWith(dateStr)) || []
+        };
+        
+        setExistingLogs(dateLogs);
+      }
+    } catch (error) {
+      console.error('Error deleting calorie log:', error);
+    }
+  };
+
+  const handleEditCalorie = (calorieId: string, currentCalories: number) => {
+    setEditingCalorieId(calorieId);
+    setEditingCalorieValue(currentCalories.toString());
+  };
+
+  const handleSaveCalorieEdit = async () => {
+    if (!editingCalorieId || !editingCalorieValue) return;
+    
+    try {
+      const response = await fetch(`/api/calorie-log/${editingCalorieId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calories: parseInt(editingCalorieValue) }),
+      });
+      
+      if (response.ok && selectedDate) {
+        // Refresh existing logs
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const logsResponse = await fetch(`/api/logs`);
+        const logsData = await logsResponse.json();
+        
+        const dateLogs = {
+          calories: logsData.calorieLogs?.filter((log: any) => log.date.startsWith(dateStr))
+            .map((log: any) => ({ id: log.id, calories: log.calories })) || [],
+          weight: logsData.weightLogs?.find((log: any) => log.date.startsWith(dateStr)) ? {
+            id: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).id,
+            weight: logsData.weightLogs.find((log: any) => log.date.startsWith(dateStr)).weight
+          } : undefined,
+          activities: logsData.activityLogs?.filter((log: any) => log.date.startsWith(dateStr)) || []
+        };
+        
+        setExistingLogs(dateLogs);
+        setEditingCalorieId(null);
+        setEditingCalorieValue("");
+      }
+    } catch (error) {
+      console.error('Error updating calorie log:', error);
     }
   };
 
@@ -89,7 +207,7 @@ export default function CalendarPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Calendar Log View</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Calendar Log View</h1>
         {!showDayView && (
           <div>
             <Calendar onDateSelect={handleDateSelect} />
@@ -109,9 +227,116 @@ export default function CalendarPage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 {formatDate(selectedDate)}
               </h2>
+              
+              {/* Display existing logs */}
+              {(() => {
+                const hasValidCalories = existingLogs.calories && existingLogs.calories.length > 0 && 
+                  existingLogs.calories.some(log => log.calories > 0);
+                const hasValidWeight = existingLogs.weight && existingLogs.weight.weight > 0;
+                const hasValidActivities = existingLogs.activities && existingLogs.activities.length > 0;
+                const hasAnyLogs = hasValidCalories || hasValidWeight || hasValidActivities;
+                
+                return hasAnyLogs ? (
+                  <div className="mb-6 bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Existing Logs for This Day:</h3>
+                    <div className="space-y-3">
+                      {/* Calorie List */}
+                      {existingLogs.calories && existingLogs.calories.length > 0 && (() => {
+                        const validCalorieLogs = existingLogs.calories.filter(log => log.calories > 0);
+                        const totalCalories = validCalorieLogs.reduce((sum, log) => sum + log.calories, 0);
+                        return totalCalories > 0 && validCalorieLogs.length > 0 ? (
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <span className="font-medium text-blue-600 text-sm mr-2">Calories:</span>
+                            <span className="font-semibold text-blue-700 text-sm">
+                              Total: {totalCalories} cal
+                            </span>
+                          </div>
+                        <div className="space-y-1">
+                          {validCalorieLogs.map((calorieLog) => (
+                            <div key={calorieLog.id} className="flex items-center gap-3 text-sm">
+                              {editingCalorieId === calorieLog.id ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    type="number"
+                                    value={editingCalorieValue}
+                                    onChange={(e) => setEditingCalorieValue(e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                                    min="1"
+                                    max="10000"
+                                    aria-label="Edit calories"
+                                    placeholder="Enter calories"
+                                  />
+                                  <button
+                                    onClick={handleSaveCalorieEdit}
+                                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingCalorieId(null);
+                                      setEditingCalorieValue("");
+                                    }}
+                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="text-gray-700">{calorieLog.calories} cal</span>
+                                  <button
+                                    onClick={() => handleEditCalorie(calorieLog.id, calorieLog.calories)}
+                                    className="text-blue-600 hover:text-blue-700 text-sm"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCalorie(calorieLog.id)}
+                                    className="text-red-600 hover:text-red-700 text-sm w-5 h-5 flex items-center justify-center"
+                                    aria-label="Delete"
+                                  >
+                                    ×
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      ) : null;
+                    })()}
+                    
+                    {/* Weight */}
+                    {existingLogs.weight && existingLogs.weight.weight > 0 && (
+                      <div className="flex items-center text-sm">
+                        <span className="font-medium text-green-600 mr-2">Weight:</span>
+                        <span>{existingLogs.weight.weight} lbs</span>
+                      </div>
+                    )}
+                    
+                    {/* Activities */}
+                    {existingLogs.activities && existingLogs.activities.length > 0 && (
+                      <div>
+                        <span className="font-medium text-yellow-600 mr-2 text-sm">Activities:</span>
+                        <ul className="list-disc list-inside mt-1">
+                          {existingLogs.activities.map((activity) => (
+                            <li key={activity.id} className="text-sm text-gray-700">
+                              {activity.activity}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                ) : null;
+              })()}
+              
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Log:</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     onClick={() => setLogType("calorie")}
                     className={`p-3 rounded-lg border-2 transition-colors ${

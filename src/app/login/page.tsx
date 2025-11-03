@@ -2,14 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,7 +24,8 @@ export default function LoginPage() {
       })
 
       if (response.ok) {
-        router.push('/calendar')
+        // Use window.location for full page reload to ensure cookies are sent
+        window.location.href = '/calendar'
       } else {
         const data = await response.json()
         setError(data.error || 'Login failed')

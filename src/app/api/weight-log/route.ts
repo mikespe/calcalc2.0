@@ -51,13 +51,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const log = await prisma.weightLog.create({
-      data: {
-        weight,
-        date: date ? new Date(date) : new Date(),
+    const targetDate = date ? new Date(date) : new Date()
+    const startOfDay = new Date(targetDate)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(targetDate)
+    endOfDay.setHours(23, 59, 59, 999)
+    
+    // Check if there's already a weight log for this date
+    const existingLog = await prisma.weightLog.findFirst({
+      where: {
         userId: user.id,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
     })
+
+    let log
+    if (existingLog) {
+      // Update existing log
+      log = await prisma.weightLog.update({
+        where: { id: existingLog.id },
+        data: { weight },
+      })
+    } else {
+      // Create new log
+      log = await prisma.weightLog.create({
+        data: {
+          weight,
+          date: targetDate,
+          userId: user.id,
+        },
+      })
+    }
 
     return NextResponse.json(log, { status: 201 })
   } catch (error) {

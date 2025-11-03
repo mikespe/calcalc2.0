@@ -183,10 +183,10 @@ export default function NutritionSearch() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Nutrition Search</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Nutrition Search</h1>
           
           <form onSubmit={handleSubmit} className="mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
               <div className="flex-1">
                 <input
                   type="search"
@@ -200,7 +200,7 @@ export default function NutritionSearch() {
                   Enter a food to see its nutritional information
                 </p>
               </div>
-              <div className="flex items-end">
+              <div className="flex">
                 <button
                   type="submit"
                   disabled={isLoading}

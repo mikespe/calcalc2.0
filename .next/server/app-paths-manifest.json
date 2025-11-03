@@ -1,12 +1,10 @@
 {
   "/nutrition-search/page": "app/nutrition-search/page.js",
   "/calendar/page": "app/calendar/page.js",
-  "/my-account/page": "app/my-account/page.js",
+  "/login/page": "app/login/page.js",
+  "/calorie-calculator/page": "app/calorie-calculator/page.js",
   "/page": "app/page.js",
-  "/api/nutrition-search/route": "app/api/nutrition-search/route.js",
-  "/api/calorie-log/route": "app/api/calorie-log/route.js",
-  "/api/weight-log/route": "app/api/weight-log/route.js",
-  "/api/activity-log/route": "app/api/activity-log/route.js",
+  "/my-account/page": "app/my-account/page.js",
   "/api/user/route": "app/api/user/route.js",
   "/api/logs/route": "app/api/logs/route.js"
 }
