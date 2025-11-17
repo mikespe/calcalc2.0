@@ -289,7 +289,7 @@ export default function CalendarPage() {
                                   <button
                                     onClick={() => handleEditCalorie(calorieLog.id, calorieLog.calories)}
                                     className="text-blue-600 hover:text-blue-700 text-sm"
-                                  >
+                                  > 
                                     Edit
                                   </button>
                                   <button
