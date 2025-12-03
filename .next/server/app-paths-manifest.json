@@ -1,7 +1,7 @@
 {
-  "/nutrition-search/page": "app/nutrition-search/page.js",
-  "/page": "app/page.js",
   "/calendar/page": "app/calendar/page.js",
-  "/my-account/page": "app/my-account/page.js",
-  "/login/page": "app/login/page.js"
+  "/nutrition-search/page": "app/nutrition-search/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/my-account/page": "app/my-account/page.js"
 }
