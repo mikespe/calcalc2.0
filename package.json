@@ -4,13 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "start": "next start",
+    "build": "node scripts/generate-prisma.js && next build",
+    "start": "node scripts/run-migrations.js && next start",
+    "start:with-check": "bash scripts/start.sh",
+    "start:prod": "prisma migrate deploy && next start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "postinstall": "prisma generate"
+    "postinstall": "node scripts/generate-prisma.js || echo 'Skipping Prisma generate (DATABASE_URL not available during install)'",
+    "db:init": "tsx scripts/ensure-migrations.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:check": "node scripts/check-migrations.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

@@ -68,8 +68,20 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     console.error('Error during login:', error)
+    // Log more details in production for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    // In production, don't expose internal errors to client
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', { errorMessage, errorStack })
+    }
+    
     return NextResponse.json(
-      { error: 'Login failed' },
+      { 
+        error: 'Login failed',
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage })
+      },
       { status: 500 }
     )
   }
